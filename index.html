@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>溝通模式測驗（是非制）</title>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f9fafc;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .question {
+      margin: 15px 0;
+      padding: 15px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .options {
+      margin-top: 10px;
+    }
+    label {
+      margin-right: 15px;
+      cursor: pointer;
+    }
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background: #3498db;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    #result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #ecf0f1;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    #chartContainer {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>溝通模式測驗（是非制）</h1>
+
+  <form id="quizForm"></form>
+
+  <button type="button" onclick="calculateResult()">提交答案</button>
+
+  <div id="result"></div>
+
+  <div id="chartContainer">
+    <canvas id="radarChart"></canvas>
+  </div>
+
+  <!-- 引用 Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    // 題目資料
+    const questions = [
+      "我會盡量減少衝突發生，愈快愈好。",
+      "如果同學要對我說一些我不想聽的話，我會迅速且巧妙地轉移話題。",
+      "衝突有時是健康的，因為能讓大家能順利解決問題。",
+      "我和同學爭吵的時候，弄清楚誰對誰錯是很重要的。",
+      "在感到壓力的場合，突如其來地讚美他人是一種緩和緊張的方法。",
+      "同學說我有時候顯得很冷淡。",
+      "同學說我有時候讓別人覺得我很隨和、可以呼來喚去。",
+      "我會感到壓力，但我嘗試不同方法放鬆讓它不太影響我的日常生活。",
+      "推卸責任是一種避免被人責怪的好方法。",
+      "過去我曾為了某些明明不是我錯的事情而認錯。",
+      "當其他同學變得焦躁時，我會保持冷靜並與他們保持距離。",
+      "我是對事不對人，爭吵完結後我們可以繼續做朋友。",
+      "我會不惜一切代價捍衛自己的立場，以確保自信和尊嚴。",
+      "我不喜歡被大聲斥責，所以我通常會試著圓滑地緩和情況。",
+      "如果我足夠聰明和幽默，我就可以避免衝突。",
+      "如果發生壞事，我會切斷自己的情感；這樣感覺更安全，不會讓自己失去防備。",
+      "我不怕直接指出對方的過錯，但我會試著修飾說話令對方不會難過。",
+      "過於情緒化並不能解決問題。",
+      "我會一直記著那些曾經冒犯過我的人和事。",
+      "如果我忘記自己許下的承諾，「扮傻」、「搞笑」可以讓別人不再追究。"
+    ];
+
+    // 每題對應分組
+    const mapping = {
+      A: [1,7,10,14],
+      B: [4,9,13,19],
+      C: [2,5,15,20],
+      D: [6,11,16,18],
+      E: [3,8,12,17]
+    };
+
+    // 動態生成題目
+    const form = document.getElementById("quizForm");
+    questions.forEach((q, i) => {
+      const div = document.createElement("div");
+      div.className = "question";
+      div.innerHTML = `<p>${i+1}. ${q}</p>
+        <div class="options">
+          <label><input type="radio" name="q${i+1}" value="1"> 是</label>
+          <label><input type="radio" name="q${i+1}" value="0"> 否</label>
+        </div>`;
+      form.appendChild(div);
+    });
+
+    let radarChart; // 儲存圖表實例
+
+    function calculateResult() {
+      let scores = {A:0, B:0, C:0, D:0, E:0};
+      let answeredCount = 0;
+
+      for (let group in mapping) {
+        mapping[group].forEach(num => {
+          const val = document.querySelector(`input[name="q${num}"]:checked`);
+          if (val) {
+            scores[group] += parseInt(val.value);
+            answeredCount++;
+          }
+        });
+      }
+
+      // 檢查是否所有題目都答了
+      if (answeredCount < 20) {
+        document.getElementById("result").innerHTML = 
+          "⚠️ 請完成所有題目再提交。";
+        return;
+      }
+
+      // 檢查是否全部相同（全是 / 全否）
+      const allScores = Object.values(scores);
+      const allEqual = allScores.every(s => s === allScores[0]);
+
+      if (allEqual) {
+        document.getElementById("result").innerHTML = 
+          "⚠️ 你的答案沒有顯示出明顯的溝通模式傾向，請重新作答。";
+        if (radarChart) radarChart.destroy();
+        return;
+      }
+
+      // 找出最高分組
+      let maxGroup = null;
+      let maxScore = -1;
+      for (let g in scores) {
+        if (scores[g] > maxScore) {
+          maxScore = scores[g];
+          maxGroup = g;
+        }
+      }
+
+      let description = "";
+      switch(maxGroup) {
+        case "A": description = "A 型：討好型（Placater）"; break;
+        case "B": description = "B 型：指責型（Blamer）"; break;
+        case "C": description = "C 型：打岔型（Distracter）"; break;
+        case "D": description = "D 型：理智型（Computer）"; break;
+        case "E": description = "E 型：一致型（Congruent，理想狀態）"; break;
+      }
+
+      document.getElementById("result").innerHTML = 
+        `你的主要溝通模式是：<br><span style="color:#e74c3c">${description}</span>`;
+
+      // 畫雷達圖
+      const ctx = document.getElementById("radarChart").getContext("2d");
+      if (radarChart) radarChart.destroy();
+
+      radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ["A 討好型", "B 指責型", "C 打岔型", "D 理智型", "E 一致型"],
+          datasets: [{
+            label: "分數",
+            data: [scores.A, scores.B, scores.C, scores.D, scores.E],
+            backgroundColor: "rgba(52, 152, 219, 0.2)",
+            borderColor: "#3498db",
+            pointBackgroundColor: "#3498db"
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 4, // 每組最多 4 題
+              ticks: { stepSize: 1 }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
