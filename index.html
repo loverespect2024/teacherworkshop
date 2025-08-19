@@ -49,8 +49,8 @@
       padding: 20px;
       background: #ecf0f1;
       border-radius: 8px;
-      font-size: 18px;
-      font-weight: bold;
+      font-size: 16px;
+      line-height: 1.6;
     }
     #chartContainer {
       margin-top: 30px;
@@ -77,16 +77,16 @@
     // 雙語題目
     const questions = [
       ["Conflict is something I try to reduce as soon as possible.", "我會盡量減少衝突發生，愈快愈好。"],
-      ["If someone’s going to tell me something I don’t want to hear, I’ll quickly and smoothly try to change the subject.", "如果其他人要對我說一些我不想聽的話，我會迅速且巧妙地轉移話題。"],
+      ["If someone’s going to tell me something I don’t want to hear, I’ll quickly and smoothly try to change the subject.", "如果有人要對我說一些我不想聽的話，我會迅速且巧妙地轉移話題。"],
       ["Conflict is healthy if it means the people involved solve a problem.", "衝突有時是健康的，因為能讓大家能順利解決問題。"],
-      ["It’s important that people know who’s responsible for a mistake.", "我和其他人爭吵的時候，弄清楚誰對誰錯是很重要的。"],
+      ["It’s important that people know who’s responsible for a mistake.", "我和他人爭吵的時候，弄清楚誰對誰錯是很重要的。"],
       ["Catching people off-guard with a compliment is a good way to ease tension.", "在感到壓力的場合，突如其來地讚美他人是一種緩和緊張的方法。"],
       ["I’ve been told I can be unemotional.", "有人說我有時候顯得很冷淡。"],
       ["I’ve been told that sometimes I let people take me for granted.", "有人說我有時候讓別人覺得我很隨和、可以呼來喚去。"],
       ["I can get stressed but I try not to let it affect my life too much.", "我會感到壓力，但我嘗試不同方法放鬆讓它不太影響我的日常生活。"],
       ["Avoiding taking responsibility for my actions is a good way to shift blame.", "推卸責任是一種避免被人責怪的好方法。"],
       ["In the past, I have taken the blame for something when it wasn’t my fault.", "過去我曾為了某些明明不是我錯的事情而認錯。"],
-      ["I can keep my head clear by distancing myself when those around me are getting edgy.", "當其他人變得焦躁時，我能保持冷靜並與他們保持距離。"],
+      ["I can keep my head clear by distancing myself when those around me are getting edgy.", "當其他人變得焦躁時，我會保持冷靜並與他們保持距離。"],
       ["Hopefully, people know that once a conflict with me is finished, we can then move on.", "我是對事不對人，爭吵完結後我們可以繼續做朋友。"],
       ["I’ll fight my corner at all costs to make sure I can hold my head up high.", "我會不惜一切代價捍衛自己的立場，以確保自信和尊嚴。"],
       ["I dislike being shouted at, so I’ll usually try to soothe the situation.", "我不喜歡被大聲斥責，所以我通常會試著圓滑地緩和情況。"],
@@ -98,13 +98,42 @@
       ["If I’ve forgotten to do something I said I would, some ‘social flirting’ keeps people off my back.", "如果我忘記自己許下的承諾，「扮傻」、「搞笑」可以讓別人不再追究。"]
     ];
 
-    // 每題對應分組 (與原先一致)
+    // 題目對應分組
     const mapping = {
       A: [1,7,10,14],
       B: [4,9,13,19],
       C: [2,5,15,20],
       D: [6,11,16,18],
       E: [3,8,12,17]
+    };
+
+    // 模式描述
+    const descriptions = {
+      A: {
+        name: "A 型：討好型（Placater）",
+        positive: "正面：讓大家感到開心，減少爭吵和不和。",
+        blind: "盲點：可能忽略自己的感受和需要，長期下來可能會感到委屈或不開心。"
+      },
+      B: {
+        name: "B 型：指責型（Blamer）",
+        positive: "正面：很快地指出問題所在，可能迅速找到錯誤的原因。",
+        blind: "盲點：會讓別人感到難過或生氣，容易引起爭吵和不和。"
+      },
+      C: {
+        name: "C 型：打岔型（Distracter）",
+        positive: "正面：能輕鬆氣氛，讓大家暫時忘記煩惱。",
+        blind: "盲點：問題沒有真正解決，可能會一直存在，同時可能讓人覺得態度不認真。"
+      },
+      D: {
+        name: "D 型：理智型（Computer）",
+        positive: "正面：能夠提供清晰的分析和解決方案，讓事情更有條理。",
+        blind: "盲點：可能忽視大家的感受，讓人覺得冷冰冰的。"
+      },
+      E: {
+        name: "E 型：一致型（Congruent，理想狀態）",
+        positive: "正面：真誠的溝通讓彼此更容易理解對方的想法和感受，減少誤解。有助於建立互信，讓關係更穩固。而且能直接面對問題，找到實際的解決方案，而不是迴避或轉移問題。",
+        blind: "盲點：有時候過於直白的話可能會讓人感到受傷，因此需要學會用尊重和同理心來表達。"
+      }
     };
 
     // 動態生成題目
@@ -159,17 +188,16 @@
         }
       }
 
-      let description = "";
-      switch(maxGroup) {
-        case "A": description = "A 型：討好型（Placater）"; break;
-        case "B": description = "B 型：指責型（Blamer）"; break;
-        case "C": description = "C 型：打岔型（Distracter）"; break;
-        case "D": description = "D 型：理智型（Computer）"; break;
-        case "E": description = "E 型：一致型（Congruent，理想狀態）"; break;
-      }
+      const desc = descriptions[maxGroup];
 
-      document.getElementById("result").innerHTML = 
-        `你的主要溝通模式是：<br><span style="color:#e74c3c">${description}</span>`;
+      document.getElementById("result").innerHTML = `
+        <div>
+          <strong>你的主要溝通模式是：</strong><br>
+          <span style="color:#e74c3c">${desc.name}</span><br><br>
+          <strong>${desc.positive}</strong><br>
+          <span>${desc.blind}</span>
+        </div>
+      `;
 
       const ctx = document.getElementById("radarChart").getContext("2d");
       if (radarChart) radarChart.destroy();
